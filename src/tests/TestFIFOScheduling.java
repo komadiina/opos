@@ -14,11 +14,11 @@ public class TestFIFOScheduling {
         Scheduler scheduler = new Scheduler();
         scheduler.setAlgorithm(new FIFOAlgorithm());
 
-        JobSpecification job1 = new JobSpecification(new DemoTask("Task1", 250, 20, 0), 0),
-                    job2 = new JobSpecification(new DemoTask("Task2", 250, 20, 0), 0),
-                    job3 = new JobSpecification(new DemoTask("Task3", 250, 20, 0), 0),
-                    job4 = new JobSpecification(new DemoTask("Task4", 250, 20, 0), 0),
-                    job5 = new JobSpecification(new DemoTask("Task5", 250, 20, 0), 0);
+        JobSpecification job1 = new JobSpecification(new DemoTask("Task1", 250, 20, 1), 0),
+                    job2 = new JobSpecification(new DemoTask("Task2", 250, 20, 1), 0),
+                    job3 = new JobSpecification(new DemoTask("Task3", 250, 20, 1), 0),
+                    job4 = new JobSpecification(new DemoTask("Task4", 250, 20, 1), 0),
+                    job5 = new JobSpecification(new DemoTask("Task5", 250, 20, 1), 0);
 
         System.out.println("FIFO/FCFS Scheduling tasks...");
         scheduler.schedule(job1);

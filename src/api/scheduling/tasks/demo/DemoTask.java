@@ -2,7 +2,7 @@ package api.scheduling.tasks.demo;
 
 import api.scheduling.tasks.*;
 
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.*;
 import java.util.stream.*;
 import java.util.*;
 
@@ -20,35 +20,33 @@ public class DemoTask implements IUserJob {
 
     @Override
     public void run(IJobContext jobContext) {
-        System.out.printf("Demo task '%1$s' started, parallelism degree: %2$d%n", name, parallelismDegree);
+        System.out.printf("[DemoTask] Demo task '%1$s' started, parallelism degree: %2$d%n", name, parallelismDegree);
         Vector<Integer> data = Stream.iterate(0, x -> x + 1)
                 .limit(numIterations)
                 .collect(Collectors.toCollection(Vector::new));
 
         // Simulate work
-        if (parallelismDegree > 0)
-            try (ForkJoinPool pool = new ForkJoinPool(parallelismDegree);) {
-                data.parallelStream().forEach(x -> {
-                    System.out.println(name + ": " + x);
-                    try {
-                        Thread.sleep(sleepTime);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                });
-            } catch (IllegalArgumentException ex) {
-                System.out.println("Parallelism degree must be positive.");
-                ex.printStackTrace();
-            }
-        else data.stream().forEachOrdered(x -> {
-            System.out.println(name + ": " + x);
-            try {
-                Thread.sleep(sleepTime);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        });
+        ExecutorService pool = Executors.newFixedThreadPool(parallelismDegree);
+        List<Callable<Void>> tasks = new ArrayList<>();
+        for (Integer i : data) {
+            tasks.add(() -> {
+                System.out.println(name + ": " + i);
+                try {
+                    Thread.sleep(sleepTime);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                return null;
+            });
+        }
 
-        System.out.println("Demo task finished.");
+        try {
+            pool.invokeAll(tasks);
+            pool.shutdown();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("[DemoTask] Demo task finished.");
     }
 }

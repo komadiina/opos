@@ -1,19 +1,43 @@
 package api.scheduling.tasks.demo;
 
 import api.scheduling.tasks.*;
+
 import javax.sound.sampled.*;
 import java.io.*;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.*;
 
 public class AudioGain implements IUserJob {
-    public String name = "Audio gain task.";
-    public Integer sleepTime = 0;
-    public Integer numIterations = 1;
-    public Integer gaindB = 0;
+    public String name;
+    public Integer sleepTime, numIterations, gaindB;
     public String filePath, fileDirectory, fileName, outputDirectory;
-    public final Integer parallelismDegree; // No. of CPU cores to utilize
+    public List<String> inputFiles = null;
+    public Integer parallelismDegree; // No. of CPU cores to utilize
+
+    public AudioGain(String name, Integer sleepTime, Integer numIterations,
+                     Integer gainValue, String fileDirectory, String fileName,
+                     String outputDirectory) {
+        this(name, sleepTime, numIterations, gainValue, fileDirectory, fileName, outputDirectory,
+                Runtime.getRuntime().availableProcessors());
+    }
+
+    public AudioGain(String name, Integer sleepTime, Integer numIterations,
+                     Integer gainValue, String fileDirectory, List<String> files, String outputDirectory,
+                     Integer parallelismDegree) {
+        this.name = name;
+        this.sleepTime = sleepTime;
+        this.numIterations = numIterations;
+        this.gaindB = gainValue;
+        this.fileDirectory = fileDirectory.endsWith(File.separator) ?
+                fileDirectory :
+                fileDirectory + File.separator;
+        this.outputDirectory = outputDirectory.endsWith(File.separator) ?
+                outputDirectory :
+                outputDirectory + File.separator;
+        this.inputFiles = files;
+        this.parallelismDegree = parallelismDegree;
+    }
 
     public AudioGain(String name, Integer sleepTime, Integer numIterations,
                      Integer gainValue, String fileDirectory, String fileName,
@@ -34,13 +58,35 @@ public class AudioGain implements IUserJob {
 
         this.filePath = this.fileDirectory + this.fileName;
         this.parallelismDegree = numIterations > parallelismDegree ?
-                                  parallelismDegree : numIterations;
+                parallelismDegree : numIterations;
     }
 
     public void run(IJobContext jobContext) {
         assert filePath != null;
 
-        System.out.println("Started AudioGain task...");
+        if (inputFiles != null) {
+            ExecutorService pool = Executors.newFixedThreadPool(Math.min(inputFiles.size(), parallelismDegree));
+            List<Callable<Void>> tasks = new ArrayList<>();
+
+            for (String file : inputFiles)
+                tasks.add(() -> {
+                    runTask(fileDirectory + file, file);
+                return null;
+            });
+
+            try {
+                pool.invokeAll(tasks);
+                pool.shutdown();
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
+        } else {
+            runTask(this.fileDirectory + this.fileName, this.fileName);
+        }
+    }
+
+    private void runTask(String filePath, String fileName) {
+        System.out.printf("[AudioGain] Started task '%1$s' (file: %2$s)...%n", this.name, fileName);
 
         // Read WAVE file
         File file = new File(filePath);
@@ -62,28 +108,35 @@ public class AudioGain implements IUserJob {
                 format.getEncoding() != AudioFormat.Encoding.PCM_UNSIGNED)
             throw new IllegalArgumentException("Only PCM encoded .WAV files are supported.");
 
-        Vector<Integer> data = readData(ais, format.isBigEndian()), original = data;
+        Vector<Integer> data = readData(ais, format.isBigEndian());
 
-        try (ForkJoinPool pool = new ForkJoinPool(parallelismDegree);) {
-            for (int iteration = 1; iteration <= this.numIterations; iteration++) {
-                System.out.println("Iteration #" + iteration);
+        for (int iteration = 1; iteration <= this.numIterations; iteration++) {
+            System.out.println("[AudioGain] Iteration #" + iteration);
 
-                for (int i = 0; i < data.size(); i++)
-                    data.set(i, attenuate(data.elementAt(i), gaindB));
+            ExecutorService pool = Executors.newFixedThreadPool(parallelismDegree);
+            List<Callable<Void>> tasks = new ArrayList<>();
 
-                saveToFile(data,
-                        (int) format.getSampleRate(),
-                        String.format("%1$s%2$s_%3$s", outputDirectory, getCurrentTime(), fileName));
+            for (int i = 0; i < data.size(); i++) {
+                int finalI = i;
+                tasks.add(() -> {
+                    data.set(finalI, attenuate(data.elementAt(finalI), gaindB));
+                    return null;
+                });
             }
 
-            // Sanity check (yet again)
-            pool.shutdown();
-        } catch (IllegalArgumentException ex) {
-            System.out.println("Parallelism degree must be positive.");
-            ex.printStackTrace();
+            try {
+                pool.invokeAll(tasks);
+                pool.shutdown();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            saveToFile(data,
+                    (int) format.getSampleRate(),
+                    String.format("%1$s%2$s_%3$s", outputDirectory, getCurrentTime(), fileName));
         }
 
-        System.out.println("Finished AudioGain task...");
+        System.out.printf("[AudioGain] Finished AudioGain task '%1$s'...%n", this.name);
         try {
             ais.close();
         } catch (IOException e) {
@@ -106,9 +159,9 @@ public class AudioGain implements IUserJob {
             while (ais.read(sampleBuffer) != -1) {
                 int sample;
                 if (isBigEndian) {
-                    sample = (int)sampleBuffer[0] << 8 | (int)sampleBuffer[1];
+                    sample = (int) sampleBuffer[0] << 8 | (int) sampleBuffer[1];
                 } else {
-                    sample = (int)sampleBuffer[1] << 8 | (int)sampleBuffer[0];
+                    sample = (int) sampleBuffer[1] << 8 | (int) sampleBuffer[0];
                 }
                 data.add(sample);
             }
@@ -136,7 +189,7 @@ public class AudioGain implements IUserJob {
 
     public static Integer attenuate(Integer value, Integer gaindB) {
 //        System.out.println((int)(value * Math.pow(10, gaindB / 20.0)));
-        return (int)(value * Math.pow(10, gaindB / 20.0));
+        return (int) (value * Math.pow(10, gaindB / 20.0));
     }
 
     private static byte[] toByteArray(Vector<Integer> samples) {

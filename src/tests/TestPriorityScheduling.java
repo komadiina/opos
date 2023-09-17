@@ -16,9 +16,9 @@ public class TestPriorityScheduling {
         scheduler.setAlgorithm(new PriorityAlgorithm());
 
         // Create some demo tasks
-        DemoTask task1 = new DemoTask("Task 1", 500, 20, 0);
-        DemoTask task2 = new DemoTask("Task 2", 500, 20, 1);
-        DemoTask task3 = new DemoTask("Task 3", 500, 20, 2);
+        DemoTask task1 = new DemoTask("Task 1", 500, 10, 1);
+        DemoTask task2 = new DemoTask("Task 2", 500, 10, 2);
+        DemoTask task3 = new DemoTask("Task 3", 500, 10, 4);
 
         // Lower priority == executes first
         JobSpecification job1 = new JobSpecification(task1, 50);
