@@ -23,10 +23,10 @@ public class TestDemoTask {
         JobSpecification job2 = new JobSpecification(task2, 0);
         JobSpecification job3 = new JobSpecification(task3, 0);
 
-        System.out.println("Scheduling tasks...");
+        System.out.println("[MAIN] Scheduling tasks...");
         scheduler.schedule(job1);
         scheduler.schedule(job2);
         scheduler.schedule(job3);
-        System.out.println("Tasks scheduled.");
+        System.out.println("[MAIN] Tasks scheduled.");
     }
 }

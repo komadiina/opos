@@ -26,11 +26,11 @@ public class TestPriorityScheduling {
         JobSpecification job3 = new JobSpecification(task3, 100);
         JobSpecification job4 = new JobSpecification(task1, 25);
 
-        System.out.println("Scheduling tasks...");
+        System.out.println("[MAIN] Scheduling tasks...");
         Job jobA = scheduler.schedule(job1);
         Job jobB = scheduler.schedule(job2);
         Job jobC = scheduler.schedule(job3);
         Job jobD = scheduler.schedule(job4);
-        System.out.println("Tasks scheduled.");
+        System.out.println("[MAIN] Tasks scheduled.");
     }
 }

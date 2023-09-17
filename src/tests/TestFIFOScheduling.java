@@ -20,12 +20,12 @@ public class TestFIFOScheduling {
                     job4 = new JobSpecification(new DemoTask("Task4", 250, 20, 1), 0),
                     job5 = new JobSpecification(new DemoTask("Task5", 250, 20, 1), 0);
 
-        System.out.println("FIFO/FCFS Scheduling tasks...");
+        System.out.println("[MAIN] FIFO/FCFS Scheduling tasks...");
         scheduler.schedule(job1);
         scheduler.schedule(job3);
         scheduler.schedule(job2);
         scheduler.schedule(job4);
         scheduler.schedule(job5);
-        System.out.println("Tasks scheduled.");
+        System.out.println("[MAIN] Tasks scheduled.");
     }
 }

@@ -16,18 +16,18 @@ public class TestFileSystem {
         Scheduler scheduler = new Scheduler();
         scheduler.setAlgorithm(new FIFOAlgorithm());
 
-        System.out.println("FIFO Scheduler initialized...");
+        System.out.println("[MAIN] FIFO Scheduler initialized...");
 
         FileWatcher watcher;
         try {
             watcher = new FileWatcher(scheduler, Path.of("./resources/input/").toString(),
                 FileSystems.getDefault().newWatchService());
 
-            System.out.println("Starting file watcher...");
+            System.out.println("[MAIN] Starting file watcher...");
             watcher.start();
-            System.out.println("File watcher started.");
+            System.out.println("[MAIN] File watcher started.");
         } catch (IOException ex) {
-            System.err.println("Could not register filesystem service.");
+            System.err.println("[MAIN] Could not register filesystem service.");
         }
     }
 }
